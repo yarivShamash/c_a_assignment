@@ -1,17 +1,34 @@
 // Those are global variables, they stay alive and reflect the state of the game
+
+var hasGameStarted = false;
+var gameStartTime = null;
+var gameVictoryTime = null;
 var elPreviousCard = null;
 var flippedCouplesCount = 0;
+var isProcessing = false;
+
+//geeting User's Name and saving it to Local Storage
+localStorage.setItem('userName', prompt('what is your name?'));
 
 // This is a constant that we dont change during the game (we mark those with CAPITAL letters)
 var TOTAL_COUPLES_COUNT = 3;
 
 // Load an audio file
 var audioWin = new Audio('sound/win.mp3');
-var audioMatch = new Audio('sound/right.mp3')
-var audioNoMatch = new Audio('sound/wrong.mp3')
+var audioMatch = new Audio('sound/right.mp3');
+var audioNoMatch = new Audio('sound/wrong.mp3');
+
 // This function is called whenever the user click a card
 function cardClicked(elCard) {
+    if (hasGameStarted === false){
+        gameStartTime = Date.now();
+        hasGameStarted = true;
+    }
 
+    if (isProcessing) {
+        return;
+    }
+    
     // If the user clicked an already flipped card - do nothing and return from the function
     if (elCard.classList.contains('flipped')) {
         return;
@@ -28,6 +45,8 @@ function cardClicked(elCard) {
         var card1 = elPreviousCard.getAttribute('data-card');
         var card2 = elCard.getAttribute('data-card');
 
+        isProcessing = true;
+
         // No match, schedule to flip them back in 1 second
         if (card1 !== card2){
             setTimeout(function () {
@@ -35,6 +54,7 @@ function cardClicked(elCard) {
                 elPreviousCard.classList.remove('flipped');
                 elPreviousCard = null;
                 audioNoMatch.play();
+                isProcessing = false;
             }, 1000)
 
         } else {
@@ -42,15 +62,30 @@ function cardClicked(elCard) {
             audioMatch.play();
             flippedCouplesCount++;
             elPreviousCard = null;
+            isProcessing = false;
+            
 
             // All cards flipped!
             if (TOTAL_COUPLES_COUNT === flippedCouplesCount) {
                 audioWin.play();
+                gameVictoryTime = Date.now();
+                var currentGameTime = gameVictoryTime - gameStartTime;
+                var bestGameTime = localStorage.getItem('bestGameTime');
+
+//Here we check if there is any value(string) in the localStorage under the key 'bestGameTime' if so, it is "true" and function will run.
+                
+                if (!bestGameTime) {
+                    localStorage.setItem('bestGameTime', currentGameTime);
+                    document.querySelector('.high-score').innerHTML = 'First Game Time: ' + currentGameTime;
+                } else if (bestGameTime && currentGameTime < bestGameTime) {
+                    localStorage.setItem('bestGameTime', currentGameTime);
+                    document.querySelector('.high-score').innerHTML = 'Best Game Time: ' + currentGameTime;
+                }
             }
+
+    
 
         }
 
     }
-
-
 }
